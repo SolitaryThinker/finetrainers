@@ -4,7 +4,7 @@ set -e -x
 
 # export TORCH_LOGS="+dynamo,recompiles,graph_breaks"
 # export TORCHDYNAMO_VERBOSE=1
-export WANDB_MODE="offline"
+export WANDB_MODE="online"
 export NCCL_P2P_DISABLE=1
 export TORCH_NCCL_ENABLE_MONITORING=0
 export FINETRAINERS_LOG_LEVEL="DEBUG"
@@ -14,8 +14,8 @@ export FINETRAINERS_LOG_LEVEL="DEBUG"
 BACKEND="ptd"
 
 # In this setting, I'm using 2 GPUs on a 4-GPU node for training
-NUM_GPUS=2
-CUDA_VISIBLE_DEVICES="2,3"
+NUM_GPUS=1
+CUDA_VISIBLE_DEVICES="0,1,2,3"
 
 # Check the JSON files for the expected JSON format
 TRAINING_DATASET_CONFIG="examples/training/sft/wan/crush_smol_lora/training.json"
@@ -31,7 +31,7 @@ HSDP_2_2="--parallel_backend $BACKEND --pp_degree 1 --dp_degree 2 --dp_shards 2 
 
 # Parallel arguments
 parallel_cmd=(
-  $DDP_2
+  $DDP_1
 )
 
 # Model arguments
@@ -49,9 +49,9 @@ model_cmd=(
 dataset_cmd=(
   --dataset_config $TRAINING_DATASET_CONFIG
   --dataset_shuffle_buffer_size 10
-  --enable_precomputation
-  --precomputation_items 25
-  --precomputation_once
+  # --enable_precomputation
+  # --precomputation_items 25
+  # --precomputation_once
 )
 
 # Dataloader arguments
@@ -61,14 +61,14 @@ dataloader_cmd=(
 
 # Diffusion arguments
 diffusion_cmd=(
-  --flow_weighting_scheme "logit_normal"
+  --flow_weighting_scheme "none"
 )
 
 # Training arguments
 # We target just the attention projections layers for LoRA training here.
 # You can modify as you please and target any layer (regex is supported)
 training_cmd=(
-  --training_type "lora"
+  --training_type "full-finetune"
   --seed 42
   --batch_size 1
   --train_steps 3000
@@ -87,13 +87,13 @@ training_cmd=(
 # Optimizer arguments
 optimizer_cmd=(
   --optimizer "adamw"
-  --lr 5e-5
-  --lr_scheduler "constant_with_warmup"
+  --lr 1e-5
+  --lr_scheduler "constant"
   --lr_warmup_steps 1000
   --lr_num_cycles 1
   --beta1 0.9
   --beta2 0.99
-  --weight_decay 1e-4
+  --weight_decay 0.01
   --epsilon 1e-8
   --max_grad_norm 1.0
 )
@@ -101,13 +101,13 @@ optimizer_cmd=(
 # Validation arguments
 validation_cmd=(
   --validation_dataset_file "$VALIDATION_DATASET_FILE"
-  --validation_steps 500
+  --validation_steps 100
 )
 
 # Miscellaneous arguments
 miscellaneous_cmd=(
   --tracker_name "finetrainers-wan"
-  --output_dir "/raid/aryan/wan"
+  --output_dir "data/wan/crush_smol_lora_29"
   --init_timeout 600
   --nccl_timeout 600
   --report_to "wandb"
