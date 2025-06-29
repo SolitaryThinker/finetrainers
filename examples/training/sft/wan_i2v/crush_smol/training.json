@@ -1,0 +1,13 @@
+{
+  "datasets": [
+    {
+      "data_root": "finetrainers/crush-smol",
+      "dataset_type": "video",
+      "video_resolution_buckets": [
+        [77, 480, 832]
+      ],
+      "reshape_mode": "bicubic",
+      "remove_common_llm_caption_prefixes": false
+    }
+  ]
+}
